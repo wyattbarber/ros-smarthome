@@ -70,5 +70,9 @@ include_directories(
 ## Install ##
 #############
 
+## Install NodeJS scripts
+install(PROGRAMS
+  src/gateway.js
+  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
 
 
