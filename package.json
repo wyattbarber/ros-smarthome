@@ -1,0 +1,19 @@
+{
+  "name": "smarthome_gateway",
+  "version": "0.0.1",
+  "description": "Programs to connect network of ROS machines to Google smarthome project",
+  "keywords": [
+    "ros"
+  ],
+  "scripts": {
+    "gateway": "node src/gateway.js"
+  },
+  "author": "Wyatt Barber",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/wyattbarber/smarthome_gateway"
+  },
+  "dependencies": {
+    "rosnodejs": "2.1.1"
+  }
+}

@@ -2,7 +2,8 @@ cmake_minimum_required(VERSION 2.8.3)
 project(smarthome)
 
 ## Find dependent packages
-find_package(catkin REQUIRED)
+find_package(catkin REQUIRED 
+                COMPONENTS roscpp rospy message_generation std_msgs)
 
 ## Uncomment this if the package has a setup.py. This macro ensures
 ## modules and global scripts declared therein get installed
@@ -77,6 +78,6 @@ include_directories(
 ## Install NodeJS scripts
 install(PROGRAMS
   src/gateway.js
-  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
+ DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
 
 

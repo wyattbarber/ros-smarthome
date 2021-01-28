@@ -1,19 +1,28 @@
-const ros = require('rosnodejs');
-const std_msgs = require('std_msgs').msg;
-const smarthome_msgs = require('smarthome').msg;
+// ROS node to link to Google Cloud Function
 
+// ROS setup
+const ros = require('rosnodejs');
+ros.initNode('smarthome_gateway') 
+    .then(nh => {
+        const std_msgs = ros.require('std_msgs');
+        const smarthome_msgs = ros.require('smarthome');
+    });
+
+// Web interfaces
 const https = require('https');
 const express = require('express');
 const app = express();
 
 const { exec } = require('child_process');
 
-const nh = ros.initNode('smarthome_gateway');
+
 
 // Global variables
 var stored_ip;
-const ip_store_url = '';
-const cloud_secret = '209j1ncncsc8w0010nijsb0q';
+const secret = '209j1ncncsc8w0010nijsb0q';
+var ip_store_url = 'https://www.google.com/url?q=https%3A%2F%2Fus-central1-decent-booster-285122.cloudfunctions.net%2Fconnection_refresh';
+ip_store_url += '?key=' + secret;
+ip_store_url += '%26client_id=' + '12955530';
 
 function check_ip() {
     // Get public ip address
@@ -47,15 +56,12 @@ function check_ip() {
                 ros.log.error('Error parsing cloud function response: ' + e);
             });
             // Verify response data
-            if (body.secret != cloud_secret) {
-                ros.log.error('Incorrect secret from cloud.');
-                return;
-            }
-            if (body.address != ip) {
+            if (body.ip != ip) {
                 ros.log.error('Cloud function returned wrong IP.');
                 return;
             }
             stored_ip = ip;
+            // TODO: Send key to cloud for sending smarthome intents
             ros.log.info('Updated connection to cloud functions.');
             return;
         })
