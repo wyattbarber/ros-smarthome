@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 // ROS node to link to Google Cloud Function
 
 // ROS setup
