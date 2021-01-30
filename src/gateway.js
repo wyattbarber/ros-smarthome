@@ -4,7 +4,7 @@
 
 // ROS setup
 const ros = require('rosnodejs');
-ros.initNode('smarthome_gateway') 
+ros.initNode('smarthome_gateway')
     .then(nh => {
         const std_msgs = ros.require('std_msgs');
         const smarthome_msgs = ros.require('smarthome');
@@ -25,15 +25,7 @@ function update_url() {
     // Check randomly generated url
     let public_url;
     exec("curl http://localhost:4040/api/tunnels", (error, stdout, stderr) => {
-        if (error) {
-            ros.log.error('Error reading ngrok url: '+error.message);
-            return;
-        }
-        if (stderr) {
-            ros.log.error('Error reading ngrok url: '+stderr);
-            return;
-        }
-        if (stdout) {
+        try {
             // Got ngrok data, find https url
             const tunnels = JSON.parse(stdout);
             for (let t of tunnels) {
@@ -43,14 +35,17 @@ function update_url() {
                 }
             }
         }
+        catch (e) {
+            ros.log.error('Error parsing ngrok response: '+e);
+        }
     });
-    
+
     // Compare url to that stored in cloud, update cloud if neccessary
     if (public_url === stored_url) {
         return; // No action needed
     }
-    ros.log.info('Public url has changed to: '+public_url);
-    https.get(cloud_url+'&url='+public_url, (res) => {
+    ros.log.info('Public url has changed to: ' + public_url);
+    https.get(cloud_url + '&url=' + public_url, (res) => {
         if (res.body.key != 'nqcpn-93gbwbwoc01') {
             ros.log.error('Could not verify response identity');
             return;
