@@ -17,7 +17,6 @@ const app = express();
 const { exec } = require('child_process');
 
 // Global data
-const port = '5050';
 var stored_url;
 const cloud_url = 'https://us-central1-decent-booster-285122.cloudfunctions.net/connection_refresh?secret=209j1ncncsc8w0010nijsb0q';
 
@@ -25,7 +24,7 @@ const cloud_url = 'https://us-central1-decent-booster-285122.cloudfunctions.net/
 function update_url() {
     // Check randomly generated url
     let public_url;
-    exec("curl http://localhost:"+port+"/api/tunnels", (error, stdout, sdterr) => {
+    exec("curl http://localhost:4040/api/tunnels", (error, stdout, sdterr) => {
         if (error) {
             ros.log.error('Error reading ngrok url: '+error.message);
             return;
