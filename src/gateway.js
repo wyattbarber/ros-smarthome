@@ -21,7 +21,7 @@ const { exec } = require('child_process');
 const ngrokOpt = {
     proto: 'http',
     addr: 5050,
-    onStatusChange: update_url(status)
+    onStatusChange: (status) => {update_url(status);}
 };
 
 // Called on ngrok status change. Restarts ngrok if tunnel has expires, gives url to cloud functions
