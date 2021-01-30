@@ -17,8 +17,7 @@ const app = express();
 const { exec } = require('child_process');
 
 // Global data
-var stored_url;
-const cloud_url = 'https://us-central1-decent-booster-285122.cloudfunctions.net/connection_refresh?secret=209j1ncncsc8w0010nijsb0q';
+var stored_url = "";
 
 // Function to get ngrok url and link with cloud if it has changed
 function update_url() {
@@ -45,18 +44,27 @@ function update_url() {
         return; // No action needed
     }
     ros.log.info('Public url has changed to: ' + public_url);
-    https.get(cloud_url + '&url=' + public_url, (res) => {
-        if (res.body.key != 'nqcpn-93gbwbwoc01') {
+    const options = {
+        hostname: 'https://us-central1-decent-booster-285122.cloudfunctions.net',
+        path: '/connection_refresh?secret=209j1ncncsc8w0010nijsb0q&url='+public_url+'&client_id=12955530',
+        method: 'POST'
+    }
+    const req = https.request(options, (res) => {
+        let d, data;
+        res.on('data', (chunk) => {d+=chunk;});
+        res.on('end', () => {data = JSON.parse(d);});
+        if (data.body.key != 'nqcpn-93gbwbwoc01') {
             ros.log.error('Could not verify response identity');
             return;
         }
-        if (res.body.url != public_url) {
+        if (data.body.url != public_url) {
             ros.log.error('Could not verify url stored in cloud');
             return;
         }
         stored_url = public_url;
         ros.log.info('Updated connection to cloud functions');
     });
+    req.on('error', e => {ros.log.error('Error in url update cloud function: '+e);});
 }
 
 // Main program flow
