@@ -1,6 +1,6 @@
 {
   "name": "smarthome_gateway",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Programs to connect network of ROS machines to Google smarthome project",
   "keywords": [
     "ros"
