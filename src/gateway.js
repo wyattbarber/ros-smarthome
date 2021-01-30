@@ -27,12 +27,7 @@ function update_url() {
         try {
             // Got ngrok data, find https url
             const tunnels = JSON.parse(stdout);
-            for (let t of tunnels.tunnels) {
-                if (t.proto == 'https') {
-                    public_url = t.public_url;
-                    return;
-                }
-            }
+            public_url = tunnels.tunnels[0].public_url;
         }
         catch (e) {
             ros.log.error('Error parsing ngrok response: '+e);
