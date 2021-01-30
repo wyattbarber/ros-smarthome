@@ -9,72 +9,63 @@ ros.initNode('smarthome_gateway')
         const std_msgs = ros.require('std_msgs');
         const smarthome_msgs = ros.require('smarthome');
     });
-
 // Web interfaces
 const https = require('https');
 const express = require('express');
 const app = express();
-
+// Command line interface
 const { exec } = require('child_process');
 
+// Global data
+const port = '5050';
+var stored_url;
+const cloud_url = 'https://us-central1-decent-booster-285122.cloudfunctions.net/connection_refresh?secret=209j1ncncsc8w0010nijsb0q';
 
-
-// Global variables
-var stored_ip;
-const secret = '209j1ncncsc8w0010nijsb0q';
-var ip_store_url = 'https://www.google.com/url?q=https%3A%2F%2Fus-central1-decent-booster-285122.cloudfunctions.net%2Fconnection_refresh';
-ip_store_url += '?key=' + secret;
-ip_store_url += '%26client_id=' + '12955530';
-
-function check_ip() {
-    // Get public ip address
-    let ip;
-    exec("curl ifconfig.me", (error, stdout, stderr) => {
+// Function to get ngrok url and link with cloud if it has changed
+function update_url() {
+    // Check randomly generated url
+    let public_url;
+    exec("curl http://localhost:"+port+"/api/tunnels", (error, stdout, sdterr) => {
         if (error) {
-            ros.log.error('Error getting public IP: ' + error.message);
+            ros.log.error('Error reading ngrok url: '+error.message);
             return;
         }
         if (stderr) {
-            ros.log.error('Error getting public IP: ' + stderr);
+            ros.log.error('Error reading ngrok url: '+stderr);
             return;
         }
-        ip = stdout;
-    });
-    // Compare to ip last sent to google cloud
-    if (ip != stored_ip) {
-        ros.log.info('IP has changed to '+ip);
-        // Send request to cloud function
-        https.get(ip_store_url, (res) => {
-            // Assemble response
-            var body = '';
-            let response;
-            res.on('data', (chunk) => {
-                body += chunk;
-            });
-            res.on('end', () => {
-                response = JSON.parse(body);
-            });
-            res.on('error', (e) => {
-                ros.log.error('Error parsing cloud function response: ' + e);
-            });
-            // Verify response data
-            if (body.ip != ip) {
-                ros.log.error('Cloud function returned wrong IP.');
-                return;
+        if (stdout) {
+            // Got ngrok data, find https url
+            const tunnels = JSON.parse(stdout);
+            for (let t of tunnels) {
+                if (t.proto == 'https') {
+                    public_url = t.public_url;
+                    return;
+                }
             }
-            stored_ip = ip;
-            // TODO: Send key to cloud for sending smarthome intents
-            ros.log.info('Updated connection to cloud functions.');
-            return;
-        })
+        }
+    });
+    
+    // Compare url to that stored in cloud, update cloud if neccessary
+    if (public_url === stored_url) {
+        return; // No action needed
     }
+    ros.log.info('Public url has changed to: '+public_url);
+    https.get(cloud_url+'&url='+public_url, (res) => {
+        if (res.body.key != 'nqcpn-93gbwbwoc01') {
+            ros.log.error('Could not verify response identity');
+            return;
+        }
+        if (res.body.url != public_url) {
+            ros.log.error('Could not verify url stored in cloud');
+            return;
+        }
+        stored_url = public_url;
+        ros.log.info('Updated connection to cloud functions');
+    });
 }
-
-
-
-
 
 // Main program flow
 if (require.main === module) {
-    check_ip();
+    update_url();
 }
