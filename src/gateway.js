@@ -10,6 +10,7 @@ ros.initNode('smarthome_gateway')
         const smarthome_msgs = ros.require('smarthome');
     });
 // Web interfaces
+const ngrok = require('ngrok');
 const https = require('https');
 const express = require('express');
 const app = express();
@@ -17,28 +18,18 @@ const app = express();
 const { exec } = require('child_process');
 
 // Global data
-var stored_url = "";
+const ngrokOpt = {
+    proto: 'http',
+    addr: 5050,
+    onStatusChange: update_url(status)
+};
 
-// Function to get ngrok url and link with cloud if it has changed
-function update_url() {
-    // Check randomly generated url
-    let public_url;
-    exec("curl http://localhost:4040/api/tunnels", (error, stdout, stderr) => {
-        try {
-            // Got ngrok data, find https url
-            const tunnels = JSON.parse(stdout);
-            public_url = tunnels.tunnels[0].public_url;
-        }
-        catch (e) {
-            ros.log.error('Error parsing ngrok response: '+e);
-        }
-    });
+// Called on ngrok status change. Restarts ngrok if tunnel has expires, gives url to cloud functions
+async function update_url(status) {
+    // Restart ngrok
+    public_url = await ngrok.connect(ngrokOpt);
 
-    // Compare url to that stored in cloud, update cloud if neccessary
-    if (public_url === stored_url) {
-        return; // No action needed
-    }
-    ros.log.info('Public url has changed to: ' + public_url);
+    // Store url in cloud functions
     const options = {
         hostname: 'https://us-central1-decent-booster-285122.cloudfunctions.net',
         path: '/connection_refresh?secret=209j1ncncsc8w0010nijsb0q&url='+public_url+'&client_id=12955530',
@@ -64,5 +55,5 @@ function update_url() {
 
 // Main program flow
 if (require.main === module) {
-    update_url();
+    update_url('closed');
 }
