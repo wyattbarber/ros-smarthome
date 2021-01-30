@@ -1,18 +1,23 @@
 {
-  "configurations": [
-    {
-      "browse": {
-        "databaseFilename": "",
-        "limitSymbolsToIncludedHeaders": true
-      },
-      "includePath": [
-        "/opt/ros/melodic/include/**",
-        "/home/wyatt/catkin_ws/src/boat_util/include/**",
-        "/home/wyatt/catkin_ws/src/incubator/include/**",
-        "/home/wyatt/catkin_ws/src/moos-ros-bridge/include/**",
-        "/usr/include/**"
-      ],
-      "name": "ROS"
-    }
-  ]
+    "configurations": [
+        {
+            "browse": {
+                "databaseFilename": "",
+                "limitSymbolsToIncludedHeaders": true
+            },
+            "includePath": [
+                "/opt/ros/melodic/include/**",
+                "/home/wyatt/catkin_ws/src/boat_util/include/**",
+                "/home/wyatt/catkin_ws/src/incubator/include/**",
+                "/home/wyatt/catkin_ws/src/moos-ros-bridge/include/**",
+                "/usr/include/**"
+            ],
+            "name": "ROS",
+            "intelliSenseMode": "linux-gcc-x64",
+            "compilerPath": "/usr/bin/gcc",
+            "cStandard": "gnu11",
+            "cppStandard": "gnu++14"
+        }
+    ],
+    "version": 4
 }

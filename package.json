@@ -14,6 +14,9 @@
     "url": "https://github.com/wyattbarber/smarthome_gateway"
   },
   "dependencies": {
-    "rosnodejs": "2.1.1"
+    "rosnodejs": "^2.1.0",
+    "express": "^4.17.0",
+    "https": "^1.0.0",
+    "child_process": "^1.0.0"
   }
 }
