@@ -11,49 +11,79 @@ ros.initNode('smarthome_gateway')
     });
 // Web interfaces
 const ngrok = require('ngrok');
-const https = require('https');
+const axios = require('axios');
 const express = require('express');
 const app = express();
+const bodyParser = require('body-parser');
+const {smarthome} = require('actions-on-google');
+const sm_app = smarthome(); 
 // Command line interface
 const { exec } = require('child_process');
 
-// Global data
-const ngrokOpt = {
-    proto: 'http',
-    addr: 5050,
-    onStatusChange: status => {update_url(status);}
+sm_app.onSync((body, headers) => {
+    ros.log.info('SYNC intent recieved');
+    return {
+        requestId: body.requestId,
+        payload: {
+            agentUserId: "1836.15267389",
+            devices: [{
+              id: "123",
+              type: "action.devices.types.OUTLET",
+              traits: [
+                "action.devices.traits.OnOff"
+              ],
+              name: {
+                defaultNames: ["My Outlet 1234"],
+                name: "Night light",
+                nicknames: ["wall plug"]
+              },
+              willReportState: false,
+              roomHint: "kitchen",
+              deviceInfo: {
+                manufacturer: "lights-out-inc",
+                model: "hs1234",
+                hwVersion: "3.2",
+                swVersion: "11.4"
+              },
+              otherDeviceIds: [{
+                deviceId: "local-device-id"
+              }],
+              customData: {
+                fooValue: 74,
+                barValue: true,
+                bazValue: "foo"
+              }
+            }]
+        }
+    }
+});
+
+app.use(bodyParser.json(), sm_app).listen(5050);
+
+
+async function send_url() {
+    let public_url;
+    exec("curl http://localhost:4040/api/tunnels", (error, stdout, stderr) => {
+        let data = JSON.parse(stdout);
+        public_url = data.tunnels[0].public_url;
+        console.log(public_url);
+
+        axios({
+            method: 'post',
+            url: "https://us-central1-decent-booster-285122.cloudfunctions.net/connection_refresh",
+            data: {
+                url: public_url,
+                client_id: '12955530',
+                secret: "209j1ncncsc8w0010nijsb0q"
+            }
+        })
+            .then((res) => {
+                //console.log(res);
+            })
+            .catch((e) => {
+                console.log(e);
+            });
+    });
 };
 
-// Called on ngrok status change. Restarts ngrok if tunnel has expires, gives url to cloud functions
-async function update_url(status) {
-    // Restart ngrok
-    public_url = await ngrok.connect(ngrokOpt);
-
-    // Store url in cloud functions
-    const options = {
-        hostname: 'https://us-central1-decent-booster-285122.cloudfunctions.net',
-        path: '/connection_refresh?secret=209j1ncncsc8w0010nijsb0q&url='+public_url+'&client_id=12955530',
-        method: 'POST'
-    }
-    const req = https.request(options, (res) => {
-        let d, data;
-        res.on('data', (chunk) => {d+=chunk;});
-        res.on('end', () => {data = JSON.parse(d);});
-        if (data.body.key != 'nqcpn-93gbwbwoc01') {
-            ros.log.error('Could not verify response identity');
-            return;
-        }
-        if (data.body.url != public_url) {
-            ros.log.error('Could not verify url stored in cloud');
-            return;
-        }
-        stored_url = public_url;
-        ros.log.info('Updated connection to cloud functions');
-    });
-    req.on('error', e => {ros.log.error('Error in url update cloud function: '+e);});
-}
-
-// Main program flow
-if (require.main === module) {
-    update_url('closed');
-}
+send_url();

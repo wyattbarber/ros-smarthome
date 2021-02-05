@@ -1,3 +1,6 @@
+# See https://developers.google.com/assistant/smarthome/reference/intent/sync
+#   for details of all fields
+
 # Device ID and capabilities
 string id
 string type
