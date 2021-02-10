@@ -10,6 +10,19 @@ find_package(catkin REQUIRED
 ## See http://ros.org/doc/api/catkin/html/user_guide/setup_dot_py.html
 # catkin_python_setup()
 
+################################################
+## Declare ROS messages, services and actions ##
+################################################
+
+add_message_files(
+  FILES
+  Device.msg
+  Devices.msg
+)
+generate_messages(
+  DEPENDENCIES
+  std_msgs
+)
 
 ###################################
 ## catkin specific configuration ##
@@ -19,16 +32,6 @@ catkin_package(
   INCLUDE_DIRS include
   LIBRARIES ${PROJECT_NAME}
   CATKIN_DEPENDS roscpp rospy message_runtime
-)
-
-################################################
-## Declare ROS messages, services and actions ##
-################################################
-
-add_message_files(
-  FILES
-  Device.msg
-  Devices.msg
 )
 
 ###########
