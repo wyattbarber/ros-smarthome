@@ -8,6 +8,8 @@ ros.initNode('smarthome_gateway')
   .then(nh => {
     const std_msgs = ros.require('std_msgs');
     const smarthome_msgs = ros.require('smarthome');
+    
+    const sync_srv = nh.serviceClient('register_device', 'smarthome/Sync');
   });
 
 // Web interfaces
@@ -23,36 +25,31 @@ const { Http2ServerRequest } = require('http2');
 // Handle SYNC requests, posted to
 app.post('/', (req, res) => {
   ros.log.info('SYNC request recieved');
+  let devices;
+  // Call sync service
+  sync_srv.call({key: 'squirrel'})
+    .then((res) => {
+      ros.log.info('SYNC data recieved from device manager');
+      let i = 0;
+      // Add each device to response array
+      res.devices.forEach(element => {
+        devices[i].id =  element.id;
+        devices[i].type = emement.type;
+        devices[i].traits = element.traits;
+        devices[i].name.name = element.name;
+        devices[i].willReportState = element.will_report_state;
+
+        i++;
+      });
+    })
+    .catch((e) => {
+      ros.log.error('Error processing SYNC data from device manager');
+      console.error(e);
+    });
+
   res.status(202).json({
     user: "1836.15267389",
-    devices: [{
-      id: "123",
-      type: "action.devices.types.OUTLET",
-      traits: [
-        "action.devices.traits.OnOff"
-      ],
-      name: {
-        defaultNames: ["My Outlet 1234"],
-        name: "Night light",
-        nicknames: ["wall plug"]
-      },
-      willReportState: false,
-      roomHint: "kitchen",
-      deviceInfo: {
-        manufacturer: "lights-out-inc",
-        model: "hs1234",
-        hwVersion: "3.2",
-        swVersion: "11.4"
-      },
-      otherDeviceIds: [{
-        deviceId: "local-device-id"
-      }],
-      customData: {
-        fooValue: 74,
-        barValue: true,
-        bazValue: "foo"
-      }
-    }]
+    devices: devices
   })
 });
 
@@ -89,6 +86,7 @@ async function send_url(public_url) {
 // Ngrok configuration object
 const ngrokOpt = {
   proto: 'http',
+  addr: 5050,
   onStatusChange: status => {
     // Restart ngrok when it expires (every 2 hours)
     if (status == 'closed') {

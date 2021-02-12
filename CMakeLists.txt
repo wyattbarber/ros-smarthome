@@ -13,12 +13,17 @@ find_package(catkin REQUIRED
 ################################################
 ## Declare ROS messages, services and actions ##
 ################################################
-
 add_message_files(
   FILES
   Device.msg
   Devices.msg
 )
+add_service_files(
+  FILES
+  Register.srv
+  Sync.srv
+)
+
 generate_messages(
   DEPENDENCIES
   std_msgs
@@ -55,25 +60,16 @@ include_directories(
 ## either from message generation or dynamic reconfigure
 # add_dependencies(${PROJECT_NAME} ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
-## Declare a C++ executable
-## With catkin_make all packages are built within a single CMake context
-## The recommended prefix ensures that target names across packages don't collide
+
+## Build device_manager.cpp
 add_executable(${PROJECT_NAME}_device_manager src/device_manager.cpp)
-
-## Rename C++ executable without prefix
-## The above recommended prefix causes long target names, the following renames the
-## target back to the shorter version for ease of user use
-## e.g. "rosrun someones_pkg node" instead of "rosrun someones_pkg someones_pkg_node"
 set_target_properties(${PROJECT_NAME}_device_manager PROPERTIES OUTPUT_NAME device_manager PREFIX "")
+target_link_libraries(${PROJECT_NAME}_device_manager ${catkin_LIBRARIES})
 
-## Add cmake target dependencies of the executable
-## same as for the library above
-# add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-
-## Specify libraries to link a library or executable target against
-# target_link_libraries(${PROJECT_NAME}_node
-#   ${catkin_LIBRARIES}
-# )
+## Build simple_light.cpp
+add_executable(${PROJECT_NAME}_simple_light src/simple_light.cpp)
+set_target_properties(${PROJECT_NAME}_simple_light PROPERTIES OUTPUT_NAME simple_light PREFIX "")
+target_link_libraries(${PROJECT_NAME}_simple_light ${catkin_LIBRARIES})
 
 #############
 ## Install ##
