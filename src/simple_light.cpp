@@ -12,7 +12,7 @@ int main(int argc, char* argv[]) {
     smarthome::Register srv;
     srv.request.device.id =             "simple_light";
     srv.request.device.type =           "action.devices.types.LIGHT";
-    srv.request.device.traits =         {"action.devices.types.OnOff"};
+    srv.request.device.traits =         {"action.devices.traits.OnOff"};
     srv.request.device.name =           "simple_light";
     srv.request.device.nicknames =      {"light", "simple_light"};
     srv.request.device.default_names = {"light"};

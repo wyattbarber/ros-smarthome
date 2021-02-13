@@ -4,12 +4,13 @@
 
 // ROS setup
 const ros = require('rosnodejs');
+var sync_srv;
 ros.initNode('smarthome_gateway')
   .then(nh => {
     const std_msgs = ros.require('std_msgs');
     const smarthome_msgs = ros.require('smarthome');
-    
-    const sync_srv = nh.serviceClient('register_device', 'smarthome/Sync');
+
+    sync_srv = nh.serviceClient('sync', 'smarthome/Sync');
   });
 
 // Web interfaces
@@ -25,32 +26,36 @@ const { Http2ServerRequest } = require('http2');
 // Handle SYNC requests, posted to
 app.post('/', (req, res) => {
   ros.log.info('SYNC request recieved');
-  let devices;
+  var devices = [];
   // Call sync service
-  sync_srv.call({key: 'squirrel'})
-    .then((res) => {
+  sync_srv.call({ key: 'squirrel' })
+    .then((response) => {
       ros.log.info('SYNC data recieved from device manager');
       let i = 0;
       // Add each device to response array
-      res.devices.forEach(element => {
-        devices[i].id =  element.id;
-        devices[i].type = emement.type;
-        devices[i].traits = element.traits;
-        devices[i].name.name = element.name;
-        devices[i].willReportState = element.will_report_state;
-
+      response.devices.forEach(element => {
+        let device = {
+          id: element.id,
+          type: element.type,
+          traits: element.traits,
+          name: {
+            name: element.name
+          },
+          willReportState: element.will_report_state
+        }
+        devices.push(device);
         i++;
       });
+      // Send SYNC response to cloud
+      res.status(202).json({
+        user: "1836.15267389",
+        devices: devices
+      })
     })
     .catch((e) => {
       ros.log.error('Error processing SYNC data from device manager');
       console.error(e);
     });
-
-  res.status(202).json({
-    user: "1836.15267389",
-    devices: devices
-  })
 });
 
 // Function to store randomly generated url with cloud
@@ -104,11 +109,11 @@ async function restart_ngrok() {
   let url = await ngrok.connect(ngrokOpt)
 
   return new Promise((resolve, reject) => {
-    if(url != undefined){
-      ros.log.info('Restarted ngrok at: '+url);
+    if (url != undefined) {
+      ros.log.info('Restarted ngrok at: ' + url);
       resolve(url);
     }
-    else{
+    else {
       reject(undefined);
     }
   })
