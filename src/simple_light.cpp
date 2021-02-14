@@ -10,7 +10,7 @@ int main(int argc, char* argv[]) {
     // Register with device_manager node
     ros::ServiceClient register_srv = nh.serviceClient<smarthome::Register>("register_device");
     smarthome::Register srv;
-    srv.request.device.id =             "simple_light";
+    srv.request.device.id =             ros::this_node::getName();
     srv.request.device.type =           "action.devices.types.LIGHT";
     srv.request.device.traits =         {"action.devices.traits.OnOff"};
     srv.request.device.name =           "simple_light";
