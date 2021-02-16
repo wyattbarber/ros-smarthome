@@ -1,5 +1,6 @@
 #include "ros/ros.h"
 #include "smarthome/Register.h"
+#include "smarthome/Execute.h"
 #include "smarthome/Device.h"
 #include "std_msgs/Bool.h"
 
@@ -7,12 +8,39 @@
 
 // Device status data
 std::string dev_id;
+bool on;
+
+bool execute_handler(smarthome::Execute::Request& req, smarthome::Execute::Response& res){
+    ROS_INFO_STREAM(dev_id << " --- EXECUTE request recieved.");
+
+    if(req.command == "action.devices.commands.OnOff") {
+        if(req.param_values[0] == "true") {
+            ROS_INFO_STREAM(dev_id << " --- Turning light ON.");
+            on = true;
+        }
+        else {
+            ROS_INFO_STREAM(dev_id << "--- Turning light OFF.");
+            on = false;
+        }
+    }
+    else {
+        ROS_ERROR_STREAM(dev_id << " --- Unregognized command: " << req.command);
+        return false;
+    }
+
+    return true;
+}
+
 
 int main(int argc, char* argv[]) {
+    // Initialize ROS node
     ros::init(argc, argv, "simple_light");
     ros::NodeHandle nh;
     std::string tmp_str = ros::this_node::getName();
     dev_id = tmp_str.erase(0,1);
+    
+    // Advertise execute service
+    ros::ServiceServer exe_srv = nh.advertiseService(dev_id+"/execute", execute_handler);
 
     // Register with device_manager node
     ros::ServiceClient register_srv = nh.serviceClient<smarthome::Register>("register_device");

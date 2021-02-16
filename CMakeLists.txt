@@ -22,6 +22,7 @@ add_service_files(
   FILES
   Register.srv
   Sync.srv
+  Execute.srv
 )
 
 generate_messages(

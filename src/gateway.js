@@ -5,12 +5,14 @@
 // ROS setup
 const ros = require('rosnodejs');
 var sync_srv;
+var nodeHandle;
 ros.initNode('smarthome_gateway')
   .then(nh => {
+    nodeHandle = nh;
     const std_msgs = ros.require('std_msgs');
     const smarthome_msgs = ros.require('smarthome');
 
-    sync_srv = nh.serviceClient('sync', 'smarthome/Sync');
+    sync_srv = nodeHandle.serviceClient('sync', 'smarthome/Sync');
   });
 
 // Web interfaces
@@ -18,6 +20,9 @@ const ngrok = require('ngrok');
 const axios = require('axios');
 const express = require('express');
 const app = express();
+const bodyParser = require('body-parser');
+app.use(bodyParser.json());
+
 
 // Function to store randomly generated url with cloud
 async function send_url(public_url) {
@@ -89,7 +94,7 @@ app.post('/smarthome/fulfillment/sync', (req, res) => {
   ros.log.info('SYNC request recieved');
   var devices = [];
   // Call sync service
-  sync_srv.call({ key: 'squirrel' })
+  sync_srv.call({ key: req.key })
     .then((response) => {
       ros.log.info('SYNC data recieved from device manager');
       let i = 0;
@@ -126,7 +131,46 @@ app.post('/smarthome/fulfillment/query', (req, res) => {
 
 // Handle EXECUTE requests
 app.post('/smarthome/fulfillment/execute', (req, res) => {
+  ros.log.info('EXECUTE request recieved.');
+  const commands = req.body.commands;
+  let cmd_result = {
+    commands: []
+  };
+  
+  commands.forEach(command => {
+    // Execute each command group
+    const devices = command.devices;
+    let command_res = {
+      ids: [],
+      status: "SUCCESS",
+      errorCode: ""
+    };
+    // Call each device in this command group
+    devices.forEach(device => {
+      let dev_id = device.id;
+      ros.log.info('Executing command on '+ dev_id);
+      let exe_srv = nodeHandle.serviceClient(dev_id+'/execute', 'smarthome/Execute');
+      exe_srv.call({
+        command: command.execution[0].command,
+        param_names: ["on"],
+        param_values: [command.execution[0].params.on ? "true": "false"]
+      })
+      .then(response => {
+        // Add device response to this command group response
+        command_res.ids.push(dev_id);
+        if(response.error_code != ""){
+          command_res.errorCode = response.error_code;
+        }
+      });
+    });
+    // Add this command group response to the execute result
+    cmd_result.commands.push(command_res);
+  });
 
+  res.status(202).json({
+    user: "1836.15267389",
+    cmd_result: cmd_result
+  })
 });
 
 // Start app
