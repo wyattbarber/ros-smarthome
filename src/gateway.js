@@ -15,16 +15,77 @@ ros.initNode('smarthome_gateway')
 
 // Web interfaces
 const ngrok = require('ngrok');
-const express = require('express');
 const axios = require('axios');
+const express = require('express');
 const app = express();
 
-// Command line interface
-const { exec } = require('child_process');
-const { Http2ServerRequest } = require('http2');
+// Function to store randomly generated url with cloud
+async function send_url(public_url) {
+  ros.log.info('Logging public url with cloud functions');
 
-// Handle SYNC requests, posted to
-app.post('/', (req, res) => {
+  axios({
+    method: 'post',
+    url: "https://us-central1-decent-booster-285122.cloudfunctions.net/connection_refresh",
+    data: {
+      url: public_url,
+      client_id: '12955530',
+      secret: "209j1ncncsc8w0010nijsb0q"
+    }
+  })
+    .then((res) => {
+      ros.log.info('Response from cloud recieved');
+    })
+    .catch((e) => {
+      ros.log.error('Error hitting cloud functions: ');
+      console.error(e);
+    });
+};
+
+// Ngrok configuration object
+const ngrokOpt = {
+  proto: 'http',
+  addr: 5050,
+  onStatusChange: status => {
+    // Restart ngrok when it expires (every 2 hours)
+    if (status == 'closed') {
+      ros.log.info('Ngrok has expired.');
+      restart_ngrok()
+        .then((url) => {
+          send_url(url);
+        });
+    }
+  }
+};
+
+// Function to restart ngrok
+async function restart_ngrok() {
+  ros.log.info('Restarting ngrok');
+  let url = await ngrok.connect(ngrokOpt)
+
+  return new Promise((resolve, reject) => {
+    if (url != undefined) {
+      ros.log.info('Restarted ngrok at: ' + url);
+      resolve(url);
+    }
+    else {
+      reject(undefined);
+    }
+  })
+}
+
+// Make initial connection 
+ngrok.connect(ngrokOpt)
+  .then((url) => {
+    ros.log.info('Opened https gateway at ' + url + '. Forwarding to localhost:5050');
+    send_url(url);
+  })
+  .catch((e) => {
+    ros.log.error('Error in ngrok: ');
+    console.error(e);
+  });
+
+// Handle SYNC requests
+app.post('/smarthome/fulfillment/sync', (req, res) => {
   ros.log.info('SYNC request recieved');
   var devices = [];
   // Call sync service
@@ -58,77 +119,15 @@ app.post('/', (req, res) => {
     });
 });
 
-// Function to store randomly generated url with cloud
-async function send_url(public_url) {
-  /*
-  exec("curl http://localhost:4040/api/tunnels", (error, stdout, stderr) => {
-    let data = JSON.parse(stdout);
-    public_url = data.tunnels[0].public_url;
-    console.log(public_url);
-  */
-  ros.log.info('Logging public url with cloud functions');
+// Handle QUERY requests
+app.post('/smarthome/fulfillment/query', (req, res) => {
 
-  axios({
-    method: 'post',
-    url: "https://us-central1-decent-booster-285122.cloudfunctions.net/connection_refresh",
-    data: {
-      url: public_url,
-      client_id: '12955530',
-      secret: "209j1ncncsc8w0010nijsb0q"
-    }
-  })
-    .then((res) => {
-      ros.log.info('Response from cloud recieved');
-    })
-    .catch((e) => {
-      ros.log.error('Error hitting cloud functions: ');
-      console.error(e);
-    });
-};
+});
 
+// Handle EXECUTE requests
+app.post('/smarthome/fulfillment/execute', (req, res) => {
 
-
-// Ngrok configuration object
-const ngrokOpt = {
-  proto: 'http',
-  addr: 5050,
-  onStatusChange: status => {
-    // Restart ngrok when it expires (every 2 hours)
-    if (status == 'closed') {
-      ros.log.info('Ngrok has expired.');
-      restart_ngrok()
-        .then((url) => {
-          send_url(url);
-        });
-    }
-  }
-};
-// Function to restart ngrok
-async function restart_ngrok() {
-  ros.log.info('Restarting ngrok');
-  let url = await ngrok.connect(ngrokOpt)
-
-  return new Promise((resolve, reject) => {
-    if (url != undefined) {
-      ros.log.info('Restarted ngrok at: ' + url);
-      resolve(url);
-    }
-    else {
-      reject(undefined);
-    }
-  })
-}
-
-// Make initial connection 
-ngrok.connect(ngrokOpt)
-  .then((url) => {
-    ros.log.info('Opened https gateway at ' + url + '. Forwarding to localhost:5050');
-    send_url(url);
-  })
-  .catch((e) => {
-    ros.log.error('Error in ngrok: ');
-    console.error(e);
-  });
+});
 
 // Start app
 ros.log.info('Fulfilment sever listening on port 5050');
