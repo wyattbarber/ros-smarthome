@@ -2,6 +2,8 @@
 
 // ROS node to link to Google Cloud Function
 
+const mapParser = require('../include/map_parser');
+
 // ROS setup
 const ros = require('rosnodejs');
 var sync_srv;
@@ -126,13 +128,59 @@ app.post('/smarthome/fulfillment/sync', (req, res) => {
 
 // Handle QUERY requests
 app.post('/smarthome/fulfillment/query', (req, res) => {
+  ros.log.info('QUERY request recieved');
+  let devices = req.body.devices;
+  var n_dev = devices.length;
+  var i = 0;
+  let payload = {
+    errorCode: "",
+    devices: []
+  };
+  devices.forEach(dev => {
+    ros.log.info('Querying '+dev.id);
+    let query_srv = nodeHandle.serviceClient(dev.id+'/query', 'smarthome/Query');
+    // TODO: set timeout function, to be called if device is offline
+    query_srv.call({key: "we0ri23m"})
+    .then(response => {
+      ros.log.info('Recieved query response from '+dev.id);
+      // TODO: cancel timeout function
+      let devStatus = mapParser.parse(response.param_names, response.param_values);
+      devStatus.online = true;
+      devStatus.status = "SUCCESS",
+      devStatus.errorCode = response.error_code
+      payload.devices[dev.id] = devStatus;
+    })
+    .catch(e => {
+      ros.log.error('Error querying '+dev.id);
+      console.log(e);
+      // TODO: cancel timeout function
+      let devStatus = {
+        online: false,
+        status: "ERROR",
+        errorCode: ""
+      };
+      payload.devices[dev.id] = devStatus;
+    });
+    i++;
+  });
 
+  new Promise((resolve, reject) => {
+    if(i == n_dev){
+      res.status(202).send({payload: payload});
+      resolve();
+    }
+    else {
+      reject();
+    }
+  });
 });
 
 // Handle EXECUTE requests
 app.post('/smarthome/fulfillment/execute', (req, res) => {
   ros.log.info('EXECUTE request recieved.');
   const commands = req.body.commands;
+  const n_cmd = commands.length;
+  var i = 0;
   let cmd_result = {
     commands: []
   };
@@ -165,12 +213,22 @@ app.post('/smarthome/fulfillment/execute', (req, res) => {
     });
     // Add this command group response to the execute result
     cmd_result.commands.push(command_res);
+    i++;
   });
 
-  res.status(202).json({
-    user: "1836.15267389",
-    cmd_result: cmd_result
-  })
+  new Promise((resolve, reject) => {
+    if(i == n_cmd){
+      // loop complete
+      res.status(202).json({
+        user: "1836.15267389",
+        cmd_result: cmd_result
+      });
+      resolve();
+    }
+    else{
+      reject();
+    }
+  });
 });
 
 // Start app

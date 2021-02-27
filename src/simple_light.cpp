@@ -2,9 +2,12 @@
 #include "smarthome/Register.h"
 #include "smarthome/Execute.h"
 #include "smarthome/Device.h"
+#include "smarthome/Query.h"
 #include "std_msgs/Bool.h"
 
 #include <string>
+
+#include "map_parser.hpp"
 
 // Device status data
 std::string dev_id;
@@ -31,6 +34,12 @@ bool execute_handler(smarthome::Execute::Request& req, smarthome::Execute::Respo
     return true;
 }
 
+bool query_handler(smarthome::Query::Request& req, smarthome::Query::Response& res){
+    ROS_INFO_STREAM(dev_id << " --- QUERY request recieved.");
+    res.param_names = { "on" };
+    res.param_values = { (on ? "true" : "false") };
+    return true;
+};
 
 int main(int argc, char* argv[]) {
     // Initialize ROS node
@@ -39,8 +48,9 @@ int main(int argc, char* argv[]) {
     std::string tmp_str = ros::this_node::getName();
     dev_id = tmp_str.erase(0,1);
     
-    // Advertise execute service
+    // Advertise execute and query services
     ros::ServiceServer exe_srv = nh.advertiseService(dev_id+"/execute", execute_handler);
+    ros::ServiceServer que_srv = nh.advertiseService(dev_id+"/query", query_handler);
 
     // Register with device_manager node
     ros::ServiceClient register_srv = nh.serviceClient<smarthome::Register>("register_device");
