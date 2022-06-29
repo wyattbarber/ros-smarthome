@@ -1,0 +1,5 @@
+<launch>
+    <node pkg="smarthome" type="gateway.js" name="gateway" output="screen"/>
+    <node pkg="smarthome" type="device_manager" name="mgr" output="screen"/>
+    <node pkg="alarm-light" type="alarm-light" name="alarm" output="screen"/>
+</launch>

@@ -94,9 +94,10 @@ ngrok.connect(ngrokOpt)
 // Handle SYNC requests
 app.post('/smarthome/fulfillment/sync', (req, res) => {
   ros.log.info('SYNC request recieved');
+  console.log(req.body);
   var devices = [];
   // Call sync service
-  sync_srv.call({ key: req.key })
+  sync_srv.call({ key: req.body.key })
     .then((response) => {
       ros.log.info('SYNC data recieved from device manager');
       let i = 0;

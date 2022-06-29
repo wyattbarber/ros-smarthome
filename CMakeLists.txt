@@ -37,7 +37,6 @@ generate_messages(
 
 catkin_package(
   INCLUDE_DIRS include
-  LIBRARIES ${PROJECT_NAME}
   CATKIN_DEPENDS roscpp rospy message_runtime
 )
 
@@ -80,6 +79,8 @@ target_link_libraries(${PROJECT_NAME}_simple_light ${catkin_LIBRARIES})
 ## Install NodeJS scripts
 install(PROGRAMS
   src/gateway.js
+  ${PROJECT_NAME}_device_manager
+  ${PROJECT_NAME}_simple_light
  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
 
 

@@ -7,7 +7,7 @@
 
 #include <string>
 
-#include "map_parser.hpp"
+//#include "map_parser.hpp"
 
 // Device status data
 std::string dev_id;
